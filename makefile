@@ -1,21 +1,50 @@
+.PHONY: run build dev clean test lint tidy \
+        db-up db-down \
+        migrate-up migrate-down migrate-force migrate-create
+
+BIN           := ./bin/api
+MIGRATION_DIR := database/migration
+DB_URL        ?= postgres://postgres:postgres@localhost:5433/rest_db?sslmode=disable
+
 run:
-	go run cmd/api/main.go
+	go run ./cmd/api/main.go
 
 build:
-	mkdir -p bin
-	go build -o bin/api cmd/api/main.go
+	@rm -rf $(BIN)
+	@mkdir -p bin
+	go build -o $(BIN) ./cmd/api/main.go
+
+dev:
+	air
 
 clean:
-	rm -rf bin
+	rm -rf bin tmp
+
+test:
+	go test ./...
+
+lint:
+	golangci-lint run ./...
+
+tidy:
+	go mod tidy
+
+# Docker
+db-up:
+	docker compose up -d postgres
+
+db-down:
+	docker compose down
 
 # Migrations
-DB_URL=postgres://postgres:postgres@localhost:5433/rest_db?sslmode=disable
-
 migrate-up:
-	migrate -path db/migrations -database "$(DB_URL)" up
+	migrate -path $(MIGRATION_DIR) -database "$(DB_URL)" up
 
 migrate-down:
-	migrate -path db/migrations -database "$(DB_URL)" down
+	migrate -path $(MIGRATION_DIR) -database "$(DB_URL)" down
 
 migrate-force:
-	migrate -path db/migrations -database "$(DB_URL)" force $(version)
+	migrate -path $(MIGRATION_DIR) -database "$(DB_URL)" force $(version)
+
+migrate-create:
+	migrate create -ext sql -dir $(MIGRATION_DIR) -seq $(name)
