@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"microservice/config"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 )
 
@@ -18,7 +21,7 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	s := &http.Server{
+	srv := &http.Server{
 		Addr:           ":" + strconv.Itoa(cfg.Port),
 		Handler:        mux,
 		ReadTimeout:    10 * time.Second,
@@ -26,8 +29,24 @@ func main() {
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	if err = s.ListenAndServe(); err != nil {
-		fmt.Printf("Server error: %v\n", err)
+	go func() {
+		if err = srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			fmt.Printf("Server error: %v\n", err)
+			os.Exit(1)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	fmt.Println("Shutting down server...")
+
+	if err := srv.Shutdown(ctx); err != nil {
+		fmt.Printf("Server forced to shutdown: %v\n", err)
 		os.Exit(1)
 	}
 }

@@ -1,0 +1,14 @@
+# Build output
+bin/
+
+# Air hot-reload
+tmp/
+build-errors.log
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Go
+vendor/
