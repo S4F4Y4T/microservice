@@ -5,7 +5,7 @@ import (
 )
 
 type UserService struct {
-	repo *model.Userepository
+	repo model.UserRepository
 }
 
 func NewUserService(repo model.UserRepository) *UserService {

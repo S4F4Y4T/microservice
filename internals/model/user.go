@@ -5,6 +5,6 @@ type User struct {
 	Name string `json:"name"`
 }
 
-type Userepository interface {
+type UserRepository interface {
 	GetUserByID(id int) (*User, error)
 }
