@@ -35,16 +35,3 @@ db-up:
 
 db-down:
 	docker compose down
-
-# Migrations
-migrate-up:
-	migrate -path $(MIGRATION_DIR) -database "$(DB_URL)" up
-
-migrate-down:
-	migrate -path $(MIGRATION_DIR) -database "$(DB_URL)" down
-
-migrate-force:
-	migrate -path $(MIGRATION_DIR) -database "$(DB_URL)" force $(version)
-
-migrate-create:
-	migrate create -ext sql -dir $(MIGRATION_DIR) -seq $(name)

@@ -19,7 +19,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	mux := http.NewServeMux()
+	mux := bootstrap.register()
 
 	srv := &http.Server{
 		Addr:           ":" + strconv.Itoa(cfg.Port),
