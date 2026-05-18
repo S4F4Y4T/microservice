@@ -21,7 +21,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	handler := bootstrap.Register()
+	db, err := config.SetupDatabase(cfg.DatabaseURL)
+	if err != nil {
+		fmt.Printf("Error setting up database: %v\n", err)
+		os.Exit(1)
+	}
+
+	handler := bootstrap.Register(db)
 
 	mux := router.Register(handler)
 

@@ -1,11 +1,19 @@
 package repository
 
-import "microservice/internals/model"
+import (
+	"microservice/internals/model"
 
-type UserRepository struct{}
+	"gorm.io/gorm"
+)
 
-func NewUserRepository() *UserRepository {
-	return &UserRepository{}
+type UserRepository struct {
+	db *gorm.DB
+}
+
+func NewUserRepository(db *gorm.DB) *UserRepository {
+	return &UserRepository{
+		db: db,
+	}
 }
 
 func (r *UserRepository) GetUserByID() (*model.User, error) {
