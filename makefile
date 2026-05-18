@@ -29,9 +29,15 @@ lint:
 tidy:
 	go mod tidy
 
-# Docker
-db-up:
-	docker compose up -d postgres
+migrate-up:
+	migrate -path database/migrations \
+	-database "postgres://postgres:postgres@localhost:5433/rest_db?sslmode=disable" \
+	up
 
-db-down:
-	docker compose down
+migrate-down:
+	migrate -path database/migrations \
+	-database "postgres://postgres:postgres@localhost:5433/rest_db?sslmode=disable" \
+	down
+
+migrate-create:
+	migrate create -ext sql -dir database/migrations -seq $(name)
