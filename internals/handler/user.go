@@ -13,6 +13,21 @@ func NewUserHandler(service *service.UserService) *UserHandler {
 	return &UserHandler{service: service}
 }
 
+func (h *UserHandler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
+	h.service.GetAllUsers(w, r)
+}
+
+func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
+	// Implement logic to handle the request and call the service method
+}
 func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
+	// Implement logic to handle the request and call the service method
+}
+
+func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	// Implement logic to handle the request and call the service method
+}
+
+func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	// Implement logic to handle the request and call the service method
 }

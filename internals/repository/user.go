@@ -16,6 +16,14 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 	}
 }
 
+func (r *UserRepository) GetAllUsers() ([]model.User, error) {
+	model := []model.User{}
+	if err := r.db.Find(&model).Error; err != nil {
+		return nil, err
+	}
+	return model, nil
+}
+
 func (r *UserRepository) GetUserByID() (*model.User, error) {
 	// Mock implementation, replace with actual database logic
 	return &model.User{
