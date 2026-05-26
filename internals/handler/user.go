@@ -2,6 +2,7 @@ package handler
 
 import (
 	"microservice/internals/service"
+	"microservice/pkg/response"
 	"net/http"
 )
 
@@ -14,7 +15,14 @@ func NewUserHandler(service *service.UserService) *UserHandler {
 }
 
 func (h *UserHandler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
-	h.service.GetAllUsers(w, r)
+	user, err := h.service.GetAllUsers(r.Context())
+
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, "Failed to retrieve users")
+		return
+	}
+
+	response.Success(w, http.StatusOK, "Users retrieved successfully", user)
 }
 
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {

@@ -6,5 +6,9 @@ type User struct {
 }
 
 type UserRepository interface {
-	GetUserByID() (*User, error)
+	GetUserByID(id int) (*User, error)
+	GetAllUsers() ([]User, error)
+	CreateUser(user *User) error
+	UpdateUser(user *User) error
+	DeleteUser(id int) error
 }
