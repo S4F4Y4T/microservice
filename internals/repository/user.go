@@ -11,7 +11,7 @@ type UserRepository struct {
 	db *gorm.DB
 }
 
-func NewUserRepository(db *gorm.DB) *UserRepository {
+func NewUserRepository(db *gorm.DB) model.UserRepository {
 	return &UserRepository{
 		db: db,
 	}
@@ -25,24 +25,24 @@ func (r *UserRepository) GetAllUsers(ctx context.Context) ([]model.User, error) 
 	return users, nil
 }
 
-func (r *UserRepository) GetUserByID() (*model.User, error) {
+func (r *UserRepository) GetUserByID(ctx context.Context, id int) (*model.User, error) {
 	// Mock implementation, replace with actual database logic
 	return &model.User{
 		Name: "John Doe",
 	}, nil
 }
 
-func (r *UserRepository) CreateUser(user *model.User) error {
+func (r *UserRepository) CreateUser(ctx context.Context, user *model.User) error {
 	// Mock implementation, replace with actual database logic
 	return nil
 }
 
-func (r *UserRepository) UpdateUser(user *model.User) error {
+func (r *UserRepository) UpdateUser(ctx context.Context, user *model.User) error {
 	// Mock implementation, replace with actual database logic
 	return nil
 }
 
-func (r *UserRepository) DeleteUser(id int) error {
+func (r *UserRepository) DeleteUser(ctx context.Context, id int) error {
 	// Mock implementation, replace with actual database logic
 	return nil
 }
