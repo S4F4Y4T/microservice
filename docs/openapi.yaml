@@ -15,6 +15,26 @@ paths:
     get:
       tags: [users]
       summary: List users
+      parameters:
+        - name: page
+          in: query
+          required: false
+          description: Page number (1-based).
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            example: 1
+        - name: limit
+          in: query
+          required: false
+          description: Items per page.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+            example: 10
       responses:
         "200":
           description: Users retrieved successfully
@@ -152,6 +172,23 @@ components:
           items:
             $ref: "#/components/schemas/FieldError"
 
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        total:
+          type: integer
+          format: int64
+          example: 42
+        total_pages:
+          type: integer
+          example: 5
+
     ApiResponse:
       type: object
       properties:
@@ -160,6 +197,8 @@ components:
         message:
           type: string
         data:
+          nullable: true
+        meta:
           nullable: true
         error:
           $ref: "#/components/schemas/ErrorBody"
@@ -181,6 +220,8 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/User"
+            meta:
+              $ref: "#/components/schemas/PaginationMeta"
 
   responses:
     ErrorResponse:
