@@ -46,12 +46,30 @@ func (r *UserRepository) CreateUser(ctx context.Context, user *model.User) (*mod
 	return user, nil
 }
 
-func (r *UserRepository) UpdateUser(ctx context.Context, user *model.User) error {
-	// Mock implementation, replace with actual database logic
-	return nil
+func (r *UserRepository) UpdateUser(ctx context.Context, id int, user *model.User) (*model.User, error) {
+	if err := r.db.WithContext(ctx).Model(&model.User{}).Where("id = ?", id).Updates(user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, appError.NotFound("user not found with id " + strconv.Itoa(id))
+		}
+		return nil, appError.Internal(err)
+	}
+	return user, nil
 }
 
 func (r *UserRepository) DeleteUser(ctx context.Context, id int) error {
-	// Mock implementation, replace with actual database logic
+	if err := r.db.WithContext(ctx).Delete(&model.User{}, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return appError.NotFound("user not found with id " + strconv.Itoa(id))
+		}
+		return appError.Internal(err)
+	}
 	return nil
+}
+
+func (r *UserRepository) ExistsByEmail(ctx context.Context, email string) (bool, error) {
+	var count int64
+	if err := r.db.WithContext(ctx).Model(&model.User{}).Where("email = ?", email).Count(&count).Error; err != nil {
+		return false, appError.Internal(err)
+	}
+	return count > 0, nil
 }

@@ -71,9 +71,45 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	// Implement logic to handle the request and call the service method
+	id := r.PathValue("id")
+	uid, err := strconv.Atoi(id)
+	if err != nil {
+		response.Error(w, r, appError.InvalidInput("invalid user id"))
+		return
+	}
+
+	var req dto.UpdateUserRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.Error(w, r, appError.InvalidInput("invalid request body"))
+		return
+	}
+
+	if err := validation.Validate(&req); err != nil {
+		response.Error(w, r, err)
+		return
+	}
+
+	updateUser, err := h.service.UpdateUser(r.Context(), uid, req)
+	if err != nil {
+		response.Error(w, r, err)
+		return
+	}
+
+	response.Success(w, http.StatusOK, "User updated successfully", updateUser)
 }
 
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	// Implement logic to handle the request and call the service method
+	id := r.PathValue("id")
+	uid, err := strconv.Atoi(id)
+	if err != nil {
+		response.Error(w, r, appError.InvalidInput("invalid user id"))
+		return
+	}
+
+	if err := h.service.DeleteUser(r.Context(), uid); err != nil {
+		response.Error(w, r, err)
+		return
+	}
+
+	response.Success(w, http.StatusOK, "User deleted successfully", nil)
 }
