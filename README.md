@@ -1,196 +1,144 @@
-[![GitHub Workflow Status (branch)](https://img.shields.io/github/actions/workflow/status/golang-migrate/migrate/ci.yaml?branch=master)](https://github.com/golang-migrate/migrate/actions/workflows/ci.yaml?query=branch%3Amaster)
-[![GoDoc](https://pkg.go.dev/badge/github.com/golang-migrate/migrate)](https://pkg.go.dev/github.com/golang-migrate/migrate/v4)
-[![Coverage Status](https://img.shields.io/coveralls/github/golang-migrate/migrate/master.svg)](https://coveralls.io/github/golang-migrate/migrate?branch=master)
-[![packagecloud.io](https://img.shields.io/badge/deb-packagecloud.io-844fec.svg)](https://packagecloud.io/golang-migrate/migrate?filter=debs)
-[![Docker Pulls](https://img.shields.io/docker/pulls/migrate/migrate.svg)](https://hub.docker.com/r/migrate/migrate/)
-![Supported Go Versions](https://img.shields.io/badge/Go-1.24%2C%201.25-lightgrey.svg)
-[![GitHub Release](https://img.shields.io/github/release/golang-migrate/migrate.svg)](https://github.com/golang-migrate/migrate/releases)
-[![Go Report Card](https://goreportcard.com/badge/github.com/golang-migrate/migrate/v4)](https://goreportcard.com/report/github.com/golang-migrate/migrate/v4)
+# Microservice
 
-# migrate
+A small Go REST API for managing users, built on the standard library `net/http` mux with GORM for persistence.
 
-__Database migrations written in Go. Use as [CLI](#cli-usage) or import as [library](#use-in-your-go-project).__
+## Stack
 
-* Migrate reads migrations from [sources](#migration-sources)
-   and applies them in correct order to a [database](#databases).
-* Drivers are "dumb", migrate glues everything together and makes sure the logic is bulletproof.
-   (Keeps the drivers lightweight, too.)
-* Database drivers don't assume things or try to correct user input. When in doubt, fail.
+- **Language:** Go 1.24+
+- **Router:** `net/http` (`http.ServeMux` with method+path patterns)
+- **ORM:** GORM (PostgreSQL)
+- **Validation:** `go-playground/validator/v10`
+- **Docs:** OpenAPI 3 served via Swagger UI (`swaggo/http-swagger`)
+- **Hot reload:** `air`
+- **Migrations:** `golang-migrate`
 
-Forked from [mattes/migrate](https://github.com/mattes/migrate)
+## Project layout
 
-## Databases
-
-Database drivers run migrations. [Add a new database?](database/driver.go)
-
-* [PostgreSQL](database/postgres)
-* [PGX v4](database/pgx)
-* [PGX v5](database/pgx/v5)
-* [Redshift](database/redshift)
-* [Ql](database/ql)
-* [Cassandra / ScyllaDB](database/cassandra)
-* [SQLite](database/sqlite)
-* [SQLite3](database/sqlite3) ([todo #165](https://github.com/mattes/migrate/issues/165))
-* [SQLCipher](database/sqlcipher)
-* [MySQL / MariaDB](database/mysql)
-* [Neo4j](database/neo4j)
-* [MongoDB](database/mongodb)
-* [CrateDB](database/crate) ([todo #170](https://github.com/mattes/migrate/issues/170))
-* [Shell](database/shell) ([todo #171](https://github.com/mattes/migrate/issues/171))
-* [Google Cloud Spanner](database/spanner)
-* [CockroachDB](database/cockroachdb)
-* [YugabyteDB](database/yugabytedb)
-* [ClickHouse](database/clickhouse)
-* [Firebird](database/firebird)
-* [MS SQL Server](database/sqlserver)
-* [rqlite](database/rqlite)
-
-### Database URLs
-
-Database connection strings are specified via URLs. The URL format is driver dependent but generally has the form: `dbdriver://username:password@host:port/dbname?param1=true&param2=false`
-
-Any [reserved URL characters](https://en.wikipedia.org/wiki/Percent-encoding#Percent-encoding_reserved_characters) need to be escaped. Note, the `%` character also [needs to be escaped](https://en.wikipedia.org/wiki/Percent-encoding#Percent-encoding_the_percent_character)
-
-Explicitly, the following characters need to be escaped:
-`!`, `#`, `$`, `%`, `&`, `'`, `(`, `)`, `*`, `+`, `,`, `/`, `:`, `;`, `=`, `?`, `@`, `[`, `]`
-
-It's easiest to always run the URL parts of your DB connection URL (e.g. username, password, etc) through an URL encoder. See the example Python snippets below:
-
-```bash
-$ python3 -c 'import urllib.parse; print(urllib.parse.quote(input("String to encode: "), ""))'
-String to encode: FAKEpassword!#$%&'()*+,/:;=?@[]
-FAKEpassword%21%23%24%25%26%27%28%29%2A%2B%2C%2F%3A%3B%3D%3F%40%5B%5D
-$ python2 -c 'import urllib; print urllib.quote(raw_input("String to encode: "), "")'
-String to encode: FAKEpassword!#$%&'()*+,/:;=?@[]
-FAKEpassword%21%23%24%25%26%27%28%29%2A%2B%2C%2F%3A%3B%3D%3F%40%5B%5D
-$
+```
+cmd/api/                 entrypoint
+config/                  config + DB setup
+database/migration/      SQL migrations
+docs/                    embedded OpenAPI spec
+internals/
+  bootstrap/             wires repo -> service -> handler
+  handler/               HTTP handlers
+  service/               business logic
+  repository/            GORM data access
+  model/                 domain types + repo interfaces
+  dto/                   request/response shapes
+  middleweare/           logger, cors, panic recovery
+pkg/
+  appError/              typed errors + HTTP status mapping
+  pagination/            page-based pagination helpers
+  response/              ApiResponse envelope (success/error/meta)
+  validation/            struct validation + field-level errors
+router/                  route registration
 ```
 
-## Migration Sources
-
-Source drivers read migrations from local or remote sources. [Add a new source?](source/driver.go)
-
-* [Filesystem](source/file) - read from filesystem
-* [io/fs](source/iofs) - read from a Go [io/fs](https://pkg.go.dev/io/fs#FS)
-* [Go-Bindata](source/go_bindata) - read from embedded binary data ([jteeuwen/go-bindata](https://github.com/jteeuwen/go-bindata))
-* [pkger](source/pkger) - read from embedded binary data ([markbates/pkger](https://github.com/markbates/pkger))
-* [GitHub](source/github) - read from remote GitHub repositories
-* [GitHub Enterprise](source/github_ee) - read from remote GitHub Enterprise repositories
-* [Bitbucket](source/bitbucket) - read from remote Bitbucket repositories
-* [Gitlab](source/gitlab) - read from remote Gitlab repositories
-* [AWS S3](source/aws_s3) - read from Amazon Web Services S3
-* [Google Cloud Storage](source/google_cloud_storage) - read from Google Cloud Platform Storage
-
-## CLI usage
-
-* Simple wrapper around this library.
-* Handles ctrl+c (SIGINT) gracefully.
-* No config search paths, no config files, no magic ENV var injections.
-
-[CLI Documentation](cmd/migrate) (includes CLI install instructions)
-
-### Basic usage
+## Quickstart
 
 ```bash
-$ migrate -source file://path/to/migrations -database postgres://localhost:5432/database up 2
+# 1. Start Postgres
+docker compose up -d
+
+# 2. Run migrations
+make migrate-up
+
+# 3. Run the server (hot reload via air)
+make dev
+# or without hot reload
+make run
 ```
 
-### Docker usage
+Default server: `http://localhost:6969`
+Swagger UI: `http://localhost:6969/swagger/`
 
-```bash
-$ docker run -v {{ migration dir }}:/migrations --network host migrate/migrate
-    -path=/migrations/ -database postgres://localhost:5432/database up 2
-```
+## Conventions
 
-## Use in your Go project
+### Response envelope
 
-* API is stable and frozen for this release (v3 & v4).
-* Uses [Go modules](https://golang.org/cmd/go/#hdr-Modules__module_versions__and_more) to manage dependencies.
-* To help prevent database corruptions, it supports graceful stops via `GracefulStop chan bool`.
-* Bring your own logger.
-* Uses `io.Reader` streams internally for low memory overhead.
-* Thread-safe and no goroutine leaks.
+All endpoints return:
 
-__[Go Documentation](https://pkg.go.dev/github.com/golang-migrate/migrate/v4)__
-
-```go
-import (
-    "github.com/golang-migrate/migrate/v4"
-    _ "github.com/golang-migrate/migrate/v4/database/postgres"
-    _ "github.com/golang-migrate/migrate/v4/source/github"
-)
-
-func main() {
-    m, err := migrate.New(
-        "github://mattes:personal-access-token@mattes/migrate_test",
-        "postgres://localhost:5432/database?sslmode=enable")
-    m.Steps(2)
+```json
+{
+  "success": true,
+  "message": "Users retrieved successfully",
+  "data": [...],
+  "meta": { "page": 1, "limit": 10, "total": 42, "total_pages": 5 },
+  "error": null
 }
 ```
 
-Want to use an existing database client?
+`meta` is only present on list endpoints. `error` is only present on failures.
 
-```go
-import (
-    "database/sql"
-    _ "github.com/lib/pq"
-    "github.com/golang-migrate/migrate/v4"
-    "github.com/golang-migrate/migrate/v4/database/postgres"
-    _ "github.com/golang-migrate/migrate/v4/source/file"
-)
+### Pagination
 
-func main() {
-    db, err := sql.Open("postgres", "postgres://localhost:5432/database?sslmode=enable")
-    driver, err := postgres.WithInstance(db, &postgres.Config{})
-    m, err := migrate.NewWithDatabaseInstance(
-        "file:///migrations",
-        "postgres", driver)
-    m.Up() // or m.Steps(2) if you want to explicitly set the number of migrations to run
+List endpoints accept `?page=` and `?limit=` query params.
+
+| Param  | Default | Min | Max |
+|--------|---------|-----|-----|
+| page   | 1       | 1   | —   |
+| limit  | 10      | 1   | 100 |
+
+Out-of-range values are clamped, not rejected.
+
+### Error format
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "INVALID_INPUT",
+    "message": "validation failed",
+    "fields": [{ "field": "email", "message": "Email must be a valid email address" }]
+  }
 }
 ```
 
-## Getting started
+Codes: `NOT_FOUND`, `INVALID_INPUT`, `CONFLICT`, `UNAUTHORIZED`, `FORBIDDEN`, `INTERNAL`.
 
-Go to [getting started](GETTING_STARTED.md)
+## Make targets
 
-## Tutorials
+| Target                         | What it does                            |
+|--------------------------------|-----------------------------------------|
+| `make run`                     | Run the server                          |
+| `make dev`                     | Run with hot reload via `air`           |
+| `make build`                   | Build to `./bin/api`                    |
+| `make test`                    | Run tests                               |
+| `make lint`                    | Run `golangci-lint`                     |
+| `make tidy`                    | `go mod tidy`                           |
+| `make migrate-up`              | Apply migrations                        |
+| `make migrate-down`            | Roll back migrations                    |
+| `make migrate-create name=foo` | Create new migration files              |
 
-* [CockroachDB](database/cockroachdb/TUTORIAL.md)
-* [PostgreSQL](database/postgres/TUTORIAL.md)
+## Roadmap
 
-(more tutorials to come)
+Planned REST best-practice improvements, ordered by impact.
 
-## Migration files
+### High value
 
-Each migration has an up and down migration. [Why?](FAQ.md#why-two-separate-files-up-and-down-for-a-migration)
+- [ ] **Body size limit** — wrap `r.Body` with `http.MaxBytesReader` before decoding to prevent unbounded uploads.
+- [ ] **Strict JSON decoding** — call `dec.DisallowUnknownFields()` so typos in client payloads fail loudly instead of silently dropping fields.
+- [ ] **PUT vs PATCH semantics** — `UpdateUser` currently does partial updates; either rename the route to `PATCH /users/{id}` or change semantics to full replacement.
+- [ ] **Request ID middleware** — generate a UUID per request, inject into context + `X-Request-ID` header, thread through all logs.
+- [ ] **Health endpoints** — `GET /healthz` (liveness) and `GET /readyz` (readiness with DB ping) for container orchestrators.
+- [ ] **`IdleTimeout` on `http.Server`** — add `IdleTimeout: 60 * time.Second` so keep-alive connections don't pile up.
+- [ ] **API versioning** — prefix routes with `/v1/` so breaking changes can ship without breaking existing clients.
 
-```bash
-1481574547_create_users_table.up.sql
-1481574547_create_users_table.down.sql
-```
+### Medium value
 
-[Best practices: How to write migrations.](MIGRATIONS.md)
+- [ ] **`DELETE` returns 204** — currently returns 200 with `{"data": null}`; convention is 204 No Content.
+- [ ] **Structured logging** — replace `log.Printf` / `fmt.Printf` mix with `log/slog`; pairs with the request-ID middleware.
+- [ ] **Filtering & sorting** — extend list endpoints with `?sort=`, `?filter[name]=`, etc.
+- [ ] **Timestamps** — add `created_at` / `updated_at` to the User model (most UIs eventually need them).
+- [ ] **Optimistic concurrency** — `ETag` / `If-Match` or a `version` column on update.
 
-## Coming from another db migration tool?
+### Polish / future
 
-Check out [migradaptor](https://github.com/musinit/migradaptor/).
-*Note: migradaptor is not affiliated or supported by this project*
-
-## Versions
-
-Version | Supported? | Import | Notes
---------|------------|--------|------
-**master** | :white_check_mark: | `import "github.com/golang-migrate/migrate/v4"` | New features and bug fixes arrive here first |
-**v4** | :white_check_mark: | `import "github.com/golang-migrate/migrate/v4"` | Used for stable releases |
-**v3** | :x: | `import "github.com/golang-migrate/migrate"` (with package manager) or `import "gopkg.in/golang-migrate/migrate.v3"` (not recommended) | **DO NOT USE** - No longer supported |
-
-## Development and Contributing
-
-Yes, please! [`Makefile`](Makefile) is your friend,
-read the [development guide](CONTRIBUTING.md).
-
-Also have a look at the [FAQ](FAQ.md).
-
----
-
-Looking for alternatives? [https://awesome-go.com/#database](https://awesome-go.com/#database).
+- [ ] **Rate limiting** — middleware-level token bucket.
+- [ ] **Authentication & authorization** — currently no auth on any endpoint.
+- [ ] **Metrics** — `/metrics` Prometheus endpoint with request duration histograms.
+- [ ] **Tests** — no `_test.go` files yet; start with handler-level integration tests against a test DB.
+- [ ] **CORS allowed origins from config** — avoid hardcoded values in middleware.
+- [ ] **Soft delete** — `deleted_at` column instead of hard delete, for recoverability.
+- [ ] **Trailing-slash canonicalization** — `/users/` works but `/users` 404s; redirect or document.
